@@ -1,8 +1,11 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { ShieldAlert, Activity, ClipboardList, Target, Bell, Map as MapIcon, Database, Box, Home, Hospital, Users, HardHat, FileText, Settings, ActivitySquare, PlaySquare, BarChart3, AlertTriangle } from 'lucide-react';
+import { ShieldAlert, Activity, Bell, Map as MapIcon, Home, Users, Settings, ActivitySquare, BarChart3, AlertTriangle, Wifi, WifiOff } from 'lucide-react';
+import { useDisaster } from '../context/DisasterContext';
+import { EmergencyOfflineBanner } from './EmergencyOfflineBanner';
 
 const Layout = () => {
   const location = useLocation();
+  const { communicationStatus, triggerBlackout, restoreCommunication } = useDisaster();
 
   const navGroups = [
     {
@@ -14,36 +17,18 @@ const Layout = () => {
       ]
     },
     {
-      title: "INTELLIGENCE",
-      links: [
-        { to: "/intelligence", icon: <ActivitySquare size={18} />, label: "Disaster Intelligence" },
-        { to: "/predictive", icon: <BarChart3 size={18} />, label: "Predictive Analytics" },
-        { to: "/historical", icon: <Database size={18} />, label: "Historical Data" },
-      ]
-    },
-    {
-      title: "RESOURCES",
-      links: [
-        { to: "/resources", icon: <Box size={18} />, label: "Supply Inventory" },
-        { to: "/gap-analysis", icon: <Target size={18} />, label: "Gap Analysis" },
-        { to: "/shelters", icon: <Home size={18} />, label: "Shelter Management" },
-        { to: "/hospitals", icon: <Hospital size={18} />, label: "Hospital Management" },
-        { to: "/rescue-teams", icon: <Users size={18} />, label: "Rescue Teams" },
-      ]
-    },
-    {
       title: "OPERATIONS",
       links: [
-        { to: "/action-plan", icon: <ClipboardList size={18} />, label: "Action Plans" },
+        { to: "/gap-analysis", icon: <BarChart3 size={18} />, label: "Resource Gap Analysis" },
+        { to: "/intelligence", icon: <ActivitySquare size={18} />, label: "Disaster Intelligence" },
+        { to: "/shelters", icon: <Home size={18} />, label: "Shelter Management" },
+        { to: "/rescue-teams", icon: <Users size={18} />, label: "Rescue Teams" },
         { to: "/incidents", icon: <AlertTriangle size={18} />, label: "Emergency Incidents" },
-        { to: "/infrastructure", icon: <HardHat size={18} />, label: "Infrastructure" },
       ]
     },
     {
       title: "SYSTEM",
       links: [
-        { to: "/simulation", icon: <PlaySquare size={18} />, label: "Simulation" },
-        { to: "/reports", icon: <FileText size={18} />, label: "Analytics & Reports" },
         { to: "/settings", icon: <Settings size={18} />, label: "Settings" },
       ]
     }
@@ -100,6 +85,23 @@ const Layout = () => {
             </div>
           </div>
           <div className="flex items-center gap-5">
+            {/* Demo Controls */}
+            {communicationStatus === 'ONLINE' ? (
+              <button 
+                onClick={triggerBlackout}
+                className="hidden lg:flex items-center gap-2 bg-surfaceLight hover:bg-critical/20 text-gray-400 hover:text-critical px-3 py-1.5 rounded text-xs font-medium border border-white/10 transition-colors"
+              >
+                <WifiOff size={14} /> Simulate Blackout
+              </button>
+            ) : communicationStatus === 'BLACKOUT' ? (
+              <button 
+                onClick={restoreCommunication}
+                className="hidden lg:flex items-center gap-2 bg-primary hover:bg-primaryHover text-white px-3 py-1.5 rounded text-xs font-medium transition-colors shadow-[0_0_15px_rgba(59,130,246,0.3)]"
+              >
+                <Wifi size={14} /> Restore Communication
+              </button>
+            ) : null}
+
             <button className="text-gray-400 hover:text-white transition-colors">
               <Bell size={20} />
             </button>
@@ -114,6 +116,8 @@ const Layout = () => {
             </div>
           </div>
         </header>
+
+        <EmergencyOfflineBanner />
 
         {/* Page Content */}
         <main className="flex-1 overflow-y-auto p-6 relative z-0 fade-in" key={location.pathname}>

@@ -21,7 +21,9 @@ app.use(express.json());
 
 // Routes
 import authRoutes from './routes/authRoutes.js';
+import mapRoutes from './routes/mapRoutes.js';
 app.use('/api/auth', authRoutes);
+app.use('/api/map', mapRoutes);
 
 // Basic Route for testing
 app.get('/api/health', (req, res) => {

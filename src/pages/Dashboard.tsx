@@ -1,12 +1,17 @@
-import { Users, Ambulance, Home, AlertTriangle, TrendingUp, TrendingDown, Map as MapIcon, ChevronRight } from 'lucide-react';
-import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
+import { Users, Ambulance, Home, AlertTriangle, TrendingUp, TrendingDown, Map as MapIcon, ChevronRight, WifiOff } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useDisaster } from '../context/DisasterContext';
+import { CommunicationResiliencePanel } from '../components/CommunicationResiliencePanel';
+import { LiveDisasterMap } from '../components/map/LiveDisasterMap';
 
 // Icon fix removed for stability
 
 const Dashboard = () => {
-  const nagpurCenter: [number, number] = [21.1458, 79.0882];
+  const { communicationStatus, queueOfflineAction, selectedIncidentId } = useDisaster();
+  
+  const handleAction = (type: string, desc: string) => {
+    queueOfflineAction(type, desc);
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -18,7 +23,8 @@ const Dashboard = () => {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="glass-panel p-5 flex flex-col gap-3">
+        <div className="glass-panel p-5 flex flex-col gap-3 relative overflow-hidden">
+          {communicationStatus !== 'ONLINE' && <div className="absolute inset-0 bg-background/50 backdrop-blur-[1px] z-10 flex items-center justify-center"><WifiOff size={24} className="text-gray-500 opacity-50"/></div>}
           <div className="flex items-center justify-between text-sm font-medium text-gray-400">
             Active Incidents
             <AlertTriangle size={18} className="text-critical" />
@@ -64,29 +70,12 @@ const Dashboard = () => {
       </div>
 
       {/* Main Grid */}
+      {communicationStatus !== 'ONLINE' && <CommunicationResiliencePanel />}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[500px]">
         {/* Map Section */}
-        <div className="glass-panel p-5 flex flex-col lg:col-span-2">
-          <h2 className="text-lg mb-4 flex items-center gap-2 font-display font-semibold">
-            <MapIcon size={20} className="text-primary" /> Live Disaster Map
-          </h2>
-          <div className="flex-1 rounded-lg overflow-hidden border border-white/10 bg-surfaceLight min-h-[400px]">
-            <MapContainer center={nagpurCenter} zoom={12} className="h-full w-full bg-background z-0">
-              <TileLayer
-                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-                attribution='&copy; OpenStreetMap contributors'
-              />
-              <Marker position={[21.1500, 79.1000]}>
-                <Popup>Critical Flooding Zone <br/> Wardhaman Nagar</Popup>
-              </Marker>
-              <Circle center={[21.1500, 79.1000]} radius={1500} pathOptions={{ color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0.2 }} />
-              
-              <Marker position={[21.1200, 79.0500]}>
-                <Popup>Shelter A (Capacity: 68%)</Popup>
-              </Marker>
-              <Circle center={[21.1200, 79.0500]} radius={500} pathOptions={{ color: '#10b981', fillColor: '#10b981', fillOpacity: 0.2 }} />
-            </MapContainer>
-          </div>
+        <div className="flex flex-col lg:col-span-2 h-full min-h-[400px]">
+          <LiveDisasterMap />
         </div>
 
         {/* Alerts Section */}
@@ -95,29 +84,53 @@ const Dashboard = () => {
             <h2 className="text-lg flex items-center gap-2 font-display font-semibold">
               <AlertTriangle size={20} className="text-warning" /> AI Decision Alerts
             </h2>
-            <button className="text-xs text-primary hover:text-white flex items-center">View All <ChevronRight size={14}/></button>
+            <Link to="/incidents" className="text-xs text-primary hover:text-white flex items-center">View All <ChevronRight size={14}/></Link>
           </div>
           
           <div className="flex flex-col gap-3 overflow-y-auto pr-2 custom-scrollbar">
-            <div className="p-3 bg-critical/10 border-l-4 border-critical rounded flex flex-col gap-1">
-              <span className="font-semibold text-sm text-white">Water level rising rapidly at Nag Nadi</span>
-              <span className="text-xs text-gray-400">AI Prediction: Overflow in 2 hours</span>
-              <button className="mt-2 text-xs bg-critical text-white py-1 px-2 rounded w-fit hover:bg-red-600 transition-colors">Review Actions</button>
-            </div>
+            {selectedIncidentId === 'INC-001' && (
+              <div className="p-3 bg-critical/10 border-l-4 border-critical rounded flex flex-col gap-1 fade-in">
+                <span className="font-semibold text-xs text-critical uppercase tracking-wider">SIMULATED AI RECOMMENDATION</span>
+                <span className="font-semibold text-sm text-white">Water level rising rapidly at Wardhaman Nagar</span>
+                <span className="text-xs text-gray-400">AI Prediction: Overflow in 2 hours</span>
+                <ul className="text-xs text-gray-300 list-disc ml-4 my-2">
+                  <li>Deploy Rescue Team RT-03</li>
+                  <li>Open Shelter S-02</li>
+                  <li>Restrict Road R-12</li>
+                </ul>
+                <button onClick={() => handleAction('INCIDENT_UPDATE', 'Approved AI Recommendation for INC-001')} className="mt-1 text-xs bg-critical text-white py-1 px-2 rounded w-fit hover:bg-red-600 transition-colors">
+                  {communicationStatus === 'BLACKOUT' ? 'Save Locally' : 'Execute Actions'}
+                </button>
+              </div>
+            )}
+            
+            {selectedIncidentId === 'INC-002' && (
+              <div className="p-3 bg-warning/10 border-l-4 border-warning rounded flex flex-col gap-1 fade-in">
+                <span className="font-semibold text-xs text-warning uppercase tracking-wider">SIMULATED AI RECOMMENDATION</span>
+                <span className="font-semibold text-sm text-white">Power outage reported in Dharampeth</span>
+                <span className="text-xs text-gray-400">Affecting 2 hospitals.</span>
+                <ul className="text-xs text-gray-300 list-disc ml-4 my-2">
+                  <li>Initiate ambulance reroute from Zone 2</li>
+                </ul>
+                <button onClick={() => handleAction('RESOURCE_REROUTE', 'Initiated ambulance reroute from Zone 2')} className="mt-1 text-xs bg-warning text-white py-1 px-2 rounded w-fit hover:bg-orange-600 transition-colors">
+                  {communicationStatus === 'BLACKOUT' ? 'Queue Action' : 'Execute Reroute'}
+                </button>
+              </div>
+            )}
 
-            <div className="p-3 bg-warning/10 border-l-4 border-warning rounded flex flex-col gap-1">
-              <span className="font-semibold text-sm text-white">Power outage reported in Zone 2</span>
-              <span className="text-xs text-gray-400">Affecting 2 hospitals. Reroute required.</span>
-              <button className="mt-2 text-xs bg-warning text-white py-1 px-2 rounded w-fit hover:bg-orange-600 transition-colors">Review Actions</button>
-            </div>
+            {!selectedIncidentId && (
+              <div className="p-4 flex flex-col items-center justify-center text-center text-gray-500 h-32 border border-dashed border-white/10 rounded-lg">
+                <MapIcon size={24} className="mb-2 opacity-50" />
+                <span className="text-sm">Select an incident on the map to generate AI recommendations.</span>
+              </div>
+            )}
 
-            <div className="p-3 bg-primary/10 border-l-4 border-primary rounded flex flex-col gap-1">
+            <div className="p-3 bg-primary/10 border-l-4 border-primary rounded flex flex-col gap-1 opacity-70">
               <span className="font-semibold text-sm text-white">NDRF Battalion 3 arrived at staging area</span>
               <span className="text-xs text-gray-400">Ready for deployment.</span>
-              <button className="mt-2 text-xs bg-primary text-white py-1 px-2 rounded w-fit hover:bg-blue-600 transition-colors">Assign Team</button>
             </div>
             
-            <div className="p-3 bg-surfaceLight border-l-4 border-gray-500 rounded flex flex-col gap-1">
+            <div className="p-3 bg-surfaceLight border-l-4 border-gray-500 rounded flex flex-col gap-1 opacity-70">
               <span className="font-semibold text-sm text-white">Shelter B reached 90% capacity</span>
               <span className="text-xs text-gray-400">Prepare alternative shelter locations.</span>
             </div>
